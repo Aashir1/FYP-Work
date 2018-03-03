@@ -34,11 +34,7 @@ TinyGPSPlus gps;
 
 String timeUp;
 String nmea[15];
-String labels[12] {"Time: ", "Status: ", "Latitude: ", "Hemisphere: ", "Longitude: ", "Hemisphere: ", "Speed: ", "Track Angle: ", "Date: "};
 
-//SoftwareSerial serial_connection(10, 11); //RX=pin 10, TX=pin 11
-//TinyGPSPlus gps;//This is the GPS object that will pretty much do all the grunt work with the NMEA data
- 
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 unsigned long previousMillis = 0; //to store long number
 const long interval = 10000; //Duration for sending location to server;
@@ -58,9 +54,7 @@ void setup()
 void loop() 
 {
   rfidCode();
-  
   unsigned long currentMillis = millis();
-
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
     gpsCode();
