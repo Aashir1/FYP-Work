@@ -1,22 +1,23 @@
-/* 
- * Typical pin layout used:
- * cardUiD: Card UID: 60 25 1B 14
- * keyChainUid: Card UID: 3D 27 08 C2
- * -----------------------------------------------------------------------------------------
- *             MFRC522      Arduino       Arduino   Arduino    Arduino          Arduino
- *             Reader/PCD   Uno/101       Mega      Nano v3    Leonardo/Micro   Pro Micro
- * Signal      Pin          Pin           Pin       Pin        Pin              Pin
- * -----------------------------------------------------------------------------------------
- * RST/Reset   RST          9             5         D9         RESET/ICSP-5     RST
- * SPI SS      SDA(SS)      10            53        D10        10               10
- * SPI MOSI    MOSI         11 / ICSP-4   51        D11        ICSP-4           16
- * SPI MISO    MISO         12 / ICSP-1   50        D12        ICSP-1           14
- * SPI SCK     SCK          13 / ICSP-3   52        D13        ICSP-3           15
- */
+/*
+   Typical pin layout used:
+   cardUiD: Card UID: 60 25 1B 14
+   keyChainUid: Card UID: 3D 27 08 C2
+   -----------------------------------------------------------------------------------------
+               MFRC522      Arduino       Arduino   Arduino    Arduino          Arduino
+               Reader/PCD   Uno/101       Mega      Nano v3    Leonardo/Micro   Pro Micro
+   Signal      Pin          Pin           Pin       Pin        Pin              Pin
+   -----------------------------------------------------------------------------------------
+   RST/Reset   RST          9             5         D9         RESET/ICSP-5     RST
+   SPI SS      SDA(SS)      10            53        D10        10               10
+   SPI MOSI    MOSI         11 / ICSP-4   51        D11        ICSP-4           16
+   SPI MISO    MISO         12 / ICSP-1   50        D12        ICSP-1           14
+   SPI SCK     SCK          13 / ICSP-3   52        D13        ICSP-3           15
+*/
 
 #include <SPI.h>
 #include <MFRC522.h>
 #include <SoftwareSerial.h>
+#include <LiquidCrystal.h>
 #include <TinyGPS++.h>
 //#include "TinyGPS++.h"
 //#include "SoftwareSerial.h"
@@ -25,7 +26,10 @@
 
 
 
-SoftwareSerial GPSModule(10, 11); // RX, TX
+SoftwareSerial GPSModule(10, 11); // RX, TX ( For GPS )
+SoftwareSerial GSMModule(2, 3); // RX, TX ( For GSM )
+const int rs = 6, en = 7, d4 = 8, d5 = 9, d6 = 12, d7 = 13;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 int updates;
 int failedUpdates;
 int pos;
@@ -38,20 +42,22 @@ String nmea[15];
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 unsigned long previousMillis = 0; //to store long number
 const long interval = 10000; //Duration for sending location to server;
- 
-void setup() 
+
+void setup()
 {
   Serial.begin(9600);   // Initiate a serial communication
   SPI.begin();      // Initiate  SPI bus
+  lcd.begin(16, 2);
   GPSModule.begin(9600);//This opens up communications to the GPS
+  GSMModule.begin(9600);
   mfrc522.PCD_Init();   // Initiate MFRC522
-  Serial.println("Put your card to the reader...");
-  Serial.println();
+//  Serial.println("Put your card to the reader...");
+//  Serial.println();
   rfidCode();
   gpsCode();
 
 }
-void loop() 
+void loop()
 {
   rfidCode();
   unsigned long currentMillis = millis();
@@ -60,50 +66,65 @@ void loop()
     gpsCode();
   }
 
-} 
+}
 
-
-void rfidCode(){ // RFID Module code
+// *********************************************************************************** RFID Code *************************************************************************
+void rfidCode() { // RFID Module code
   // Look for new cards
-  
-  if ( ! mfrc522.PICC_IsNewCardPresent()) 
+
+  if ( ! mfrc522.PICC_IsNewCardPresent())
   {
+//    Serial.print("new card present");
     return;
   }
   // Select one of the cards
-  if ( ! mfrc522.PICC_ReadCardSerial()) 
+  if ( ! mfrc522.PICC_ReadCardSerial())
   {
+//    Serial.print("purana card present");
     return;
   }
   //Show UID on serial monitor
-  Serial.print("UID tag :");
-  String content= "";
+//  Serial.print("UID tag :");
+  String content = "";
   byte letter;
-  for (byte i = 0; i < mfrc522.uid.size; i++) 
+  for (byte i = 0; i < mfrc522.uid.size; i++)
   {
-     Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
-     Serial.print(mfrc522.uid.uidByte[i], HEX);
-     content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
-     content.concat(String(mfrc522.uid.uidByte[i], HEX));
+//    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+//    Serial.print(mfrc522.uid.uidByte[i], HEX);
+    content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "));
+    content.concat(String(mfrc522.uid.uidByte[i], HEX));
   }
-  Serial.println();
-  Serial.print("Message : ");
+//  Serial.println();
+//  Serial.print("Message : ");
   content.toUpperCase();
-  if (content.substring(1) == "60 25 1B 14" ||content.substring(1) == "3D 27 08 C2") //change here the UID of the card/cards that you want to give access
+  if (content.substring(1) == "60 25 1B 14" || content.substring(1) == "3D 27 08 C2") //change here the UID of the card/cards that you want to give access
   {
-    Serial.println("Authorized access");
-    Serial.println();
-//    delay(3000);
+    lcd.print("Authorized User");
+    delay(500);
+    lcd.clear();
+    lcd.print("Welcome!");
+    delay(1000);
+    lcd.clear();
+//    Serial.println("Authorized access");
+//    Serial.println();
+        
   }
- 
- else   {
-    Serial.println(" Access denied");
-//    delay(3000);
+
+  else   {
+//    Serial.println(" Access denied");
+      lcd.print("UnAuthorizedUser");
+      delay(500);
+      lcd.clear();
+      lcd.print("Welcome!");
+      delay(1000);
+      lcd.clear();
   }
- }
+}
+
 //*************************************************************** GPS CODE ****************************************************************
-void gpsCode(){ // GPS Code 
-    Serial.flush();
+
+void gpsCode() { // GPS Code
+  Serial.flush();
   GPSModule.flush();
   while (GPSModule.available() > 0)
   {
@@ -125,18 +146,21 @@ void gpsCode(){ // GPS Code
     updates++;
     nmea[2] = ConvertLat();
     nmea[4] = ConvertLng();
-    Serial.println("Latitude: " + nmea[2]);
-    Serial.println("Longitude: " + nmea[4]);
-    Serial.println("Status: " + nmea[1]);
-    Serial.println("Time in utc: " + nmea[0]);
-    Serial.println("Date: " + nmea[8]);
-//    ********************************** Comment_Code *****************************************
-//    for (int i = 0; i < 9; i++) {
-//      Serial.print(labels[i]);
-//      Serial.print(nmea[i]);
-//      Serial.println("");
-//    }
-//    ********************************** Comment_Code *****************************************
+//    Serial.println("Latitude: " + nmea[2]);
+//    Serial.println("Longitude: " + nmea[4]);
+//    Serial.println("Status: " + nmea[1]);
+//    Serial.println("Time in utc: " + nmea[0]);
+//    Serial.println("Date: " + nmea[8]);
+
+    gsmCode(nmea[2], nmea[4], nmea[0], nmea[8]);
+    
+    //    ********************************** Comment_Code *****************************************
+    //    for (int i = 0; i < 9; i++) {
+    //      Serial.print(labels[i]);
+    //      Serial.print(nmea[i]);
+    //      Serial.println("");
+    //    }
+    //    ********************************** Comment_Code *****************************************
 
   }
   else {
@@ -146,7 +170,7 @@ void gpsCode(){ // GPS Code
   }
   stringplace = 0;
   pos = 0;
-//  delay(12000);
+  //  delay(12000);
 }
 
 //*************************************************************** CONVERT LAT ****************************************************************
@@ -209,4 +233,19 @@ String ConvertLng() {
   lngfirst = posneg += lngfirst;
   return lngfirst;
 }
+
+//******************************************************************************* GSM CODE **************************************************************************
+
+void gsmCode(String latitude, String longitude, String UTCTime, String currDate ){
+//  Serial.println("gsm round");
+  GSMModule.println("AT+CMGF=1");
+  delay(1000);  
+  GSMModule.println("AT+CMGS=\"+923463149015\"\r"); 
+  delay(1000);
+  GSMModule.println("Latitude: " + latitude + "\nLongitude: " + longitude + "\nUTCTime: " + UTCTime + "\ncurrDate: " + currDate);
+  delay(1000);
+  GSMModule.println((char)26);
+  delay(1000);
+  
+  }
 
