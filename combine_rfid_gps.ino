@@ -51,7 +51,7 @@ void setup()
   GPSModule.begin(9600);//This opens up communications to the GPS
   GSMModule.begin(9600);
   mfrc522.PCD_Init();   // Initiate MFRC522
-  Serial.println("Put your card to the reader...");
+//  Serial.println("Put your card to the reader...");
 //  Serial.println();
   rfidCode();
   gpsCode();
@@ -59,6 +59,7 @@ void setup()
 }
 void loop()
 {
+  
   rfidCode();
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
@@ -71,7 +72,8 @@ void loop()
 // *********************************************************************************** RFID Code *************************************************************************
 void rfidCode() { // RFID Module code
   // Look for new cards
-
+  lcd.clear();
+  lcd.print("Scan Your ID");
   if ( ! mfrc522.PICC_IsNewCardPresent())
   {
 //    Serial.print("new card present");
@@ -99,14 +101,13 @@ void rfidCode() { // RFID Module code
   content.toUpperCase();
   if (content.substring(1) == "60 25 1B 14" || content.substring(1) == "3D 27 08 C2") //change here the UID of the card/cards that you want to give access
   {
+    lcd.clear();
     lcd.print("Authorized User");
-    Serial.println("Authorized user");
     delay(500);
     lcd.clear();
-    Serial.println("user id: "+content.substring(1));
-    sendRFIDToServer(content.substring(1));
     lcd.print("Welcome!");
-    delay(1000);
+    delay(500);
+    sendRFIDToServer(content.substring(1));
     lcd.clear();
 //    Serial.println("Authorized access");
 //    Serial.println();
@@ -115,12 +116,12 @@ void rfidCode() { // RFID Module code
 
   else   {
 //    Serial.println(" Access denied");
+      lcd.clear();
       lcd.print("UnAuthorizedUser");
-      Serial.println("Authorized user");
       delay(500);
       lcd.clear();
 //      lcd.print("Welcome!");
-      delay(1000);
+//      delay(1000);
       lcd.clear();
   }
 }
@@ -244,7 +245,7 @@ void gsmCode(String latitude, String longitude, String UTCTime, String currDate 
 //  Serial.println("gsm round");
   GSMModule.println("AT+CMGF=1");
   delay(1000);  
-  GSMModule.println("AT+CMGS=\"+923463149015\"\r"); 
+  GSMModule.println("AT+CMGS=\"+923362602053\"\r"); 
   delay(1000);
   GSMModule.println("Latitude: " + latitude + "\nLongitude: " + longitude + "\nUTCTime: " + UTCTime + "\ncurrDate: " + currDate);
   delay(1000);
@@ -259,7 +260,7 @@ void sendRFIDToServer(String id ){
 //  Serial.println("gsm round");
   GSMModule.println("AT+CMGF=1");
   delay(1000);  
-  GSMModule.println("AT+CMGS=\"+923463149015\"\r"); 
+  GSMModule.println("AT+CMGS=\"+923362602053\"\r"); 
   delay(1000);
   GSMModule.println("user Id: " + id);
   delay(1000);
